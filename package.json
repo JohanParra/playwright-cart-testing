@@ -1,0 +1,35 @@
+{
+    "name": "playwright-cart-testing-suite",
+    "version": "1.0.0",
+    "description": "E2E tests para carrito de compras con Playwright y Cucumber",
+    "main": "index.js",
+    "scripts": {
+        "test": "cucumber-js",
+        "test:report": "cucumber-js --format html:cucumber-report.html",
+        "test:parallel": "cucumber-js --parallel 2",
+        "clean": "rm -rf cucumber-report.html cart-test.db",
+        "lint": "eslint . --ext .ts",
+        "format": "prettier --write '**/*.{ts,feature,json,md}'"
+    },
+    "keywords": [
+        "playwright",
+        "cucumber",
+        "bdd",
+        "testing",
+        "e2e",
+        "cart"
+    ],
+    "author": "Johan Parra <parrajohan@gmail.com>",
+    "license": "MIT",
+    "dependencies": {
+        "better-sqlite3": "^11.9.0"
+    },
+    "devDependencies": {
+        "@cucumber/cucumber": "^10.3.1",
+        "@playwright/test": "^1.42.1",
+        "@types/better-sqlite3": "^7.6.9",
+        "@types/node": "^20.11.24",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}
