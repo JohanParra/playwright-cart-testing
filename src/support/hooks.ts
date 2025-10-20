@@ -14,11 +14,16 @@ After(async function (this: CustomWorld, { result, pickle }) {
         if (result?.status === Status.FAILED) {
             // Screenshot y HTML para debugging con timeouts más cortos
             try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const screenshotPath = `test-results/screenshots/failure-${timestamp}.png`;
+
                 const screenshot = await this.page.screenshot({
                     fullPage: true,
+                    path: screenshotPath,
                     timeout: 10000 // 10 segundos en lugar de 30
                 });
                 this.attach(screenshot, 'image/png');
+                console.log(`Screenshot saved to: ${screenshotPath}`);
             } catch (screenshotError) {
                 console.log('Screenshot failed:', screenshotError instanceof Error ? screenshotError.message : String(screenshotError));
             }

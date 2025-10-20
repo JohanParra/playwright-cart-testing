@@ -19,6 +19,8 @@ export default defineConfig({
         video: 'retain-on-failure',
         // headless: process.env.HEADLESS !== 'false', // no funciona bien con cucumber
     },
+    // Configuración adicional para screenshots
+    outputDir: 'test-results/screenshots',
     projects: [
         {
             name: 'chromium',
