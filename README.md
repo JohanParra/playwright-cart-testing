@@ -40,6 +40,12 @@ HEADLESS=false npm run test
 
 # Slow motion para debug
 SLOW_MO=1000 npm run test
+
+# Con logging detallado
+LOG_LEVEL=debug npm run test
+
+# Guardar logs en archivo
+LOG_FILE=test-logs.json npm run test
 ```
 
 La DB se crea automáticamente en `cart-test.db`. Para limpiar: `rm -f cart-test.db`
@@ -95,8 +101,44 @@ src/
 
 **DB corrupta**: `rm -f cart-test.db`
 
+## Sistema de Logging
+
+El proyecto incluye un sistema de logging estructurado con Winston que proporciona seguimiento detallado de la ejecución de tests:
+
+### Niveles de Log
+- **INFO**: Acciones principales y resultados de validaciones
+- **DEBUG**: Detalles técnicos (navegación, clicks, datos)
+- **WARN**: Advertencias y situaciones inesperadas
+- **ERROR**: Errores y fallos
+
+### Contextos
+- **[STEP]**: Logs de step definitions (nivel de negocio)
+- **[PAGE]**: Logs de page objects (nivel técnico)
+- **[HOOK]**: Logs de hooks (inicio/fin de escenarios)
+- **[DB]**: Logs de operaciones de base de datos
+
+### Ejemplo de Output
+```
+[INFO] [HOOK] 🚀 Iniciando suite de tests - 2025-10-20 20:00:00
+[INFO] [STEP] 📋 Escenario: Usuario agrega un producto al carrito
+[INFO] [STEP] 🧹 Limpiando base de datos del carrito
+[DEBUG] [DB] Carrito limpiado - 0 items
+[INFO] [STEP] ✓ Base de datos del carrito limpiada exitosamente
+[INFO] [STEP] 🌐 Navegando a lista de productos
+[DEBUG] [PAGE] Navegando a productos: https://automationexercise.com/products
+[INFO] [STEP] 🛒 Agregando "Blue Top" al carrito
+[DEBUG] [PAGE] Producto encontrado: Blue Top
+[DEBUG] [PAGE] Click en "Add to cart"
+[INFO] [STEP] ✓ "Blue Top" agregado al carrito exitosamente
+[INFO] [STEP] 🔍 Validando carrito contiene 1 producto
+[DEBUG] [PAGE] Items en carrito: 1, esperado: 1
+[INFO] [STEP] ✓ Validación exitosa: carrito = 1 (esperado: 1)
+[INFO] [HOOK] ✅ Escenario completado exitosamente: Usuario agrega un producto al carrito (duración: 12.5s)
+```
+
 ## Notas
 
 - Usa automationexercise.com como sitio de prueba
 - Los productos tienen precios hardcodeados en `cart.steps.ts` (Blue Top: 500, Men Tshirt: 400, etc)
+- El sistema de logging mejora significativamente la trazabilidad y debugging de los tests
 
