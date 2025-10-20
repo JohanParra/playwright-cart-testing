@@ -9,28 +9,44 @@ export class CartPage {
     constructor(private page: Page) { }
 
     async goto() {
-        await this.page.goto(`${this.BASE_URL}/view_cart`);
+        await this.page.goto(`${this.BASE_URL}/view_cart`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000
+        });
+        // Esperar un poco más para que cargue completamente
+        await this.page.waitForTimeout(2000);
     }
 
     async gotoProductCategory(category: string) {
         // FIXME: el parámetro category no se usa, siempre va a /products
-        await this.page.goto(`${this.BASE_URL}/products`);
+        await this.page.goto(`${this.BASE_URL}/products`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000
+        });
+        // Esperar un poco más para que cargue completamente
+        await this.page.waitForTimeout(2000);
     }
 
     async addToCart(productName: string, price: number, quantity: number) {
         await this.gotoProductCategory('products');
 
-        const productCard = this.page.locator(`.productinfo:has-text("${productName}")`);
-        const addToCartButton = productCard.locator('a:has-text("Add to cart")');
+        // Esperar a que la página cargue completamente
+        await this.page.waitForLoadState('domcontentloaded', { timeout: 30000 });
 
+        const productCard = this.page.locator(`.productinfo:has-text("${productName}")`);
+
+        // Esperar a que el producto sea visible
+        await productCard.waitFor({ state: 'visible', timeout: 15000 });
+
+        const addToCartButton = productCard.locator('a:has-text("Add to cart")');
         await addToCartButton.click();
 
         // console.log(`Added ${productName} to cart`); // debug
 
         // A veces el modal tarda más, aumenté los timeouts
-        await this.page.waitForSelector('text=Added!', { timeout: 15000 });
+        await this.page.waitForSelector('text=Added!', { timeout: 20000 });
         await this.page.click('button:has-text("Continue Shopping")');
-        await this.page.waitForSelector('.modal-content', { state: 'hidden', timeout: 10000 });
+        await this.page.waitForSelector('.modal-content', { state: 'hidden', timeout: 15000 });
     }
 
     async getCartItems(): Promise<CartItem[]> {

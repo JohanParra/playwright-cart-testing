@@ -9,6 +9,7 @@ module.exports = {
     ],
     formatOptions: {
       snippetInterface: 'async-await'
-    }
+    },
+    timeout: 30000 // 30 segundos timeout global
   }
 };

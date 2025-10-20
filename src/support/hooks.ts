@@ -10,16 +10,20 @@ Before(async function (this: CustomWorld) {
 });
 
 After(async function (this: CustomWorld, { result, pickle }) {
-    if (result?.status === Status.FAILED) {
-        // Screenshot y HTML para debugging
-        const screenshot = await this.page.screenshot({ fullPage: true });
-        this.attach(screenshot, 'image/png');
+    try {
+        if (result?.status === Status.FAILED) {
+            // Screenshot y HTML para debugging
+            const screenshot = await this.page.screenshot({ fullPage: true });
+            this.attach(screenshot, 'image/png');
 
-        const html = await this.page.content();
-        this.attach(html, 'text/html');
+            const html = await this.page.content();
+            this.attach(html, 'text/html');
+        }
+    } catch (error) {
+        console.log('Error capturing debug info:', error instanceof Error ? error.message : String(error));
+    } finally {
+        await this.cleanup();
     }
-
-    await this.cleanup();
 });
 
 AfterAll(async function () {

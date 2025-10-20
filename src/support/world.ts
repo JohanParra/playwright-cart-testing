@@ -47,10 +47,37 @@ export class CustomWorld extends World {
     }
 
     async cleanup() {
-        if (this.page) await this.page.close();
-        if (this.context) await this.context.close();
-        if (this.browser) await this.browser.close();
-        if (this.db) this.db.close();
+        try {
+            if (this.page && !this.page.isClosed()) {
+                await this.page.close();
+            }
+        } catch (error) {
+            console.log('Error closing page:', error instanceof Error ? error.message : String(error));
+        }
+
+        try {
+            if (this.context) {
+                await this.context.close();
+            }
+        } catch (error) {
+            console.log('Error closing context:', error instanceof Error ? error.message : String(error));
+        }
+
+        try {
+            if (this.browser) {
+                await this.browser.close();
+            }
+        } catch (error) {
+            console.log('Error closing browser:', error instanceof Error ? error.message : String(error));
+        }
+
+        try {
+            if (this.db) {
+                this.db.close();
+            }
+        } catch (error) {
+            console.log('Error closing database:', error instanceof Error ? error.message : String(error));
+        }
     }
 }
 

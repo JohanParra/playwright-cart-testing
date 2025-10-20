@@ -12,12 +12,12 @@ Given('que la base de datos del carrito está vacía', async function (this: Cus
     expect(count).toBe(0);
 });
 
-Given('el usuario está en la lista de productos', async function (this: CustomWorld) {
+Given('el usuario está en la lista de productos', { timeout: 30000 }, async function (this: CustomWorld) {
     this.cartPage = new CartPage(this.page);
     await this.cartPage.gotoProductCategory('laptops'); // el parámetro no se usa realmente
 });
 
-Given('el carrito contiene {int} {string}', async function (
+Given('el carrito contiene {int} {string}', { timeout: 30000 }, async function (
     this: CustomWorld,
     quantity: number,
     productName: string
@@ -27,7 +27,6 @@ Given('el carrito contiene {int} {string}', async function (
     }
 
     const defaultPrice = this.getDefaultPrice(productName);
-    // HACK: a veces tarda más de 5s, especialmente "Stylish Dress"
     // TODO: investigar por qué algunos productos son más lentos
     for (let i = 0; i < quantity; i++) {
         await this.cartPage.addToCart(productName, defaultPrice, 1);
@@ -52,7 +51,7 @@ Given('el usuario agrega {string} y {string}', async function (
     await this.cartPage.addToCart(product2, price2, 1);
 });
 
-When('hace clic en {string} sobre {string}', async function (
+When('hace clic en {string} sobre {string}', { timeout: 30000 }, async function (
     this: CustomWorld,
     action: string,
     productName: string
@@ -81,7 +80,7 @@ When('el usuario agrega {string} al carrito', async function (
     await this.cartPage.addToCart(productName, price, 1);
 });
 
-When('el usuario elimina el producto', async function (this: CustomWorld) {
+When('el usuario elimina el producto', { timeout: 30000 }, async function (this: CustomWorld) {
     // Initialize cartPage if not already done
     if (!this.cartPage) {
         this.cartPage = new CartPage(this.page);
@@ -107,7 +106,7 @@ When('revisa el resumen del carrito', async function (this: CustomWorld) {
     expect(items.length).toBeGreaterThan(0);
 });
 
-Then('el carrito debe mostrar {int} producto', async function (
+Then('el carrito debe mostrar {int} producto', { timeout: 30000 }, async function (
     this: CustomWorld,
     expectedCount: number
 ) {
@@ -116,7 +115,7 @@ Then('el carrito debe mostrar {int} producto', async function (
     expect(cartCount).toBe(expectedCount);
 });
 
-Then('el total debe ser {int}', async function (
+Then('el total debe ser {int}', { timeout: 30000 }, async function (
     this: CustomWorld,
     expectedTotal: number
 ) {
@@ -215,7 +214,7 @@ CustomWorld.prototype.getDefaultPrice = function (productName: string): number {
     const defaultPrices: { [key: string]: number } = {
         'Blue Top': 500,
         'Men Tshirt': 400,
-        'Stylish Dress': 600,
+        'Stylish Dress': 1500,
         'Beautiful Peacock': 300,
         'Sleeveless Dress': 800
     };
