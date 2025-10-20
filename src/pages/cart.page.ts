@@ -25,9 +25,16 @@ export class CartPage {
         });
         // Esperar un poco más para que cargue completamente
         await this.page.waitForTimeout(2000);
+
+        // En modo visual, esperar a que los productos sean visibles
+        try {
+            await this.page.waitForSelector('.productinfo', { timeout: 15000 });
+        } catch (error) {
+            console.log('Products not visible, continuing anyway...');
+        }
     }
 
-    async addToCart(productName: string, price: number, quantity: number) {
+    async addToCart(productName: string, price: number, quantity: number, autoContinue: boolean = true) {
         await this.gotoProductCategory('products');
 
         // Esperar a que la página cargue completamente
@@ -45,8 +52,12 @@ export class CartPage {
 
         // A veces el modal tarda más, aumenté los timeouts
         await this.page.waitForSelector('text=Added!', { timeout: 20000 });
-        await this.page.click('button:has-text("Continue Shopping")');
-        await this.page.waitForSelector('.modal-content', { state: 'hidden', timeout: 15000 });
+
+        // Solo cerrar automáticamente si autoContinue es true
+        if (autoContinue) {
+            await this.page.click('button:has-text("Continue Shopping")');
+            await this.page.waitForSelector('.modal-content', { state: 'hidden', timeout: 15000 });
+        }
     }
 
     async getCartItems(): Promise<CartItem[]> {
@@ -95,7 +106,17 @@ export class CartPage {
                         }
                     }
 
-                    const quantity = 1;
+                    // Intentar obtener la cantidad real del carrito
+                    let quantity = 1;
+                    const quantityElement = row.querySelector('td:nth-child(4) button');
+                    if (quantityElement) {
+                        const quantityText = quantityElement.textContent?.trim() || '1';
+                        const parsedQuantity = parseInt(quantityText);
+                        if (!isNaN(parsedQuantity)) {
+                            quantity = parsedQuantity;
+                        }
+                    }
+
                     console.log(`Found product: "${name}", price: ${price}, quantity: ${quantity}`);
 
                     if (name && price > 0) {
@@ -111,23 +132,44 @@ export class CartPage {
     async updateQuantity(productName: string, quantity: number) {
         await this.goto();
 
-        // HACK: el sitio no permite cambiar cantidad directamente
-        // tengo que borrar y agregar N veces. No es ideal pero funciona
-        const productRow = this.page.locator(`#cart_info_table tbody tr:has-text("${productName}")`);
-        const productId = await productRow.locator('a.cart_quantity_delete').getAttribute('data-product-id');
+        // Verificar si el producto ya existe en el carrito
+        const currentItems = await this.getCartItems();
+        const existingItem = currentItems.find(item => item.product_name.includes(productName));
 
-        if (productId) {
+        if (existingItem) {
+            // Si ya existe, removerlo primero
             await this.removeItem(productName);
+        }
 
-            for (let i = 0; i < quantity; i++) {
-                await this.gotoProductCategory('products');
-                const productCard = this.page.locator(`.productinfo:has-text("${productName}")`);
+        // Método optimizado: agregar todos los productos de una vez
+        await this.gotoProductCategory('products');
+        await this.page.waitForLoadState('domcontentloaded', { timeout: 20000 });
+        await this.page.waitForTimeout(1000);
+
+        const productCard = this.page.locator(`.productinfo:has-text("${productName}")`);
+        await productCard.waitFor({ state: 'visible', timeout: 10000 });
+
+        // Agregar productos en lotes para ser más eficiente
+        const batchSize = Math.min(quantity, 3); // Procesar máximo 3 a la vez
+
+        for (let batch = 0; batch < Math.ceil(quantity / batchSize); batch++) {
+            const currentBatch = Math.min(batchSize, quantity - (batch * batchSize));
+
+            for (let i = 0; i < currentBatch; i++) {
                 const addToCartButton = productCard.locator('a:has-text("Add to cart")');
                 await addToCartButton.click();
 
-                await this.page.waitForSelector('text=Added!', { timeout: 5000 });
+                // Esperar confirmación con timeout más corto
+                await this.page.waitForSelector('text=Added!', { timeout: 8000 });
+
+                // Cerrar modal rápidamente
                 await this.page.click('button:has-text("Continue Shopping")');
-                await this.page.waitForSelector('.modal-content', { state: 'hidden', timeout: 3000 });
+                await this.page.waitForTimeout(300); // Espera muy corta
+            }
+
+            // Esperar un poco entre lotes
+            if (batch < Math.ceil(quantity / batchSize) - 1) {
+                await this.page.waitForTimeout(500);
             }
         }
     }

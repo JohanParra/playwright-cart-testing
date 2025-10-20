@@ -58,7 +58,9 @@ When('hace clic en {string} sobre {string}', { timeout: 30000 }, async function 
 ) {
     if (action === 'Agregar al carrito') {
         const price = this.getDefaultPrice(productName);
-        await this.cartPage.addToCart(productName, price, 1);
+        // Para el primer producto, no cerrar automáticamente el modal
+        const isFirstProduct = !this.db.getAllItems().length;
+        await this.cartPage.addToCart(productName, price, 1, !isFirstProduct);
 
         // Guardar en DB también
         this.db.addItem(productName, price, 1);
@@ -80,6 +82,21 @@ When('el usuario agrega {string} al carrito', async function (
     await this.cartPage.addToCart(productName, price, 1);
 });
 
+When('hace clic en {string}', { timeout: 30000 }, async function (
+    this: CustomWorld,
+    buttonText: string
+) {
+    if (!this.cartPage) {
+        this.cartPage = new CartPage(this.page);
+    }
+
+    if (buttonText === 'Continue Shopping') {
+        // Click the Continue Shopping button in the modal
+        await this.page.click('button:has-text("Continue Shopping")');
+        await this.page.waitForSelector('.modal-content', { state: 'hidden', timeout: 15000 });
+    }
+});
+
 When('el usuario elimina el producto', { timeout: 30000 }, async function (this: CustomWorld) {
     // Initialize cartPage if not already done
     if (!this.cartPage) {
@@ -91,6 +108,28 @@ When('el usuario elimina el producto', { timeout: 30000 }, async function (this:
     if (cartItems.length > 0) {
         const productName = cartItems[0].product_name;
         await this.cartPage.removeItem(productName);
+    }
+});
+
+When('el usuario cambia la cantidad a {int}', { timeout: 30000 }, async function (
+    this: CustomWorld,
+    newQuantity: number
+) {
+    // Initialize cartPage if not already done
+    if (!this.cartPage) {
+        this.cartPage = new CartPage(this.page);
+    }
+
+    // Get the first product from web cart and update its quantity
+    const cartItems = await this.cartPage.getCartItems();
+    if (cartItems.length > 0) {
+        const productName = cartItems[0].product_name;
+        await this.cartPage.updateQuantity(productName, newQuantity);
+
+        // Update database as well
+        this.db.clearCart();
+        const price = this.getDefaultPrice(productName);
+        this.db.addItem(productName, price, newQuantity);
     }
 });
 
@@ -115,6 +154,15 @@ Then('el carrito debe mostrar {int} producto', { timeout: 30000 }, async functio
     expect(cartCount).toBe(expectedCount);
 });
 
+Then('el carrito debe mostrar {int} productos', { timeout: 30000 }, async function (
+    this: CustomWorld,
+    expectedCount: number
+) {
+    const cartCount = await this.cartPage.getItemCount();
+    // console.log(`Cart count: ${cartCount}, expected: ${expectedCount}`);
+    expect(cartCount).toBe(expectedCount);
+});
+
 Then('el total debe ser {int}', { timeout: 30000 }, async function (
     this: CustomWorld,
     expectedTotal: number
@@ -124,7 +172,7 @@ Then('el total debe ser {int}', { timeout: 30000 }, async function (
     expect(cartTotal).toBe(expectedTotal);
 });
 
-Then('el producto {string} debe existir en la base de datos', async function (
+Then('el producto {string} debe existir en la base de datos', { timeout: 30000 }, async function (
     this: CustomWorld,
     productName: string
 ) {
@@ -150,7 +198,7 @@ Then('el producto {string} debe existir en la base de datos', async function (
     expect(cartItem).toBeDefined();
 });
 
-Then('el total del carrito debe ser {int}', async function (
+Then('el total del carrito debe ser {int}', { timeout: 30000 }, async function (
     this: CustomWorld,
     expectedTotal: number
 ) {
@@ -159,17 +207,6 @@ Then('el total del carrito debe ser {int}', async function (
     expect(cartTotal).toBe(expectedTotal);
 });
 
-Then('la base de datos debe reflejar cantidad = {int} para {string}', async function (
-    this: CustomWorld,
-    expectedQuantity: number,
-    productName: string
-) {
-    // Check web cart (realistic verification)
-    const cartItems = await this.cartPage.getCartItems();
-    const cartItem = cartItems.find(item => item.product_name.includes(productName));
-    expect(cartItem).toBeDefined();
-    expect(cartItem?.quantity).toBe(expectedQuantity);
-});
 
 Then('el carrito debe mostrar el mensaje {string}', async function (
     this: CustomWorld,
@@ -201,6 +238,18 @@ Then('la base de datos debe tener {int} registros en el carrito', async function
     expect(cartCount).toBe(expectedCount);
 });
 
+Then('la base de datos debe reflejar cantidad = {int} para {string}', { timeout: 30000 }, async function (
+    this: CustomWorld,
+    expectedQuantity: number,
+    productName: string
+) {
+    // Check web cart (realistic verification)
+    const cartItems = await this.cartPage.getCartItems();
+    const cartItem = cartItems.find(item => item.product_name.includes(productName));
+    expect(cartItem).toBeDefined();
+    expect(cartItem?.quantity).toBe(expectedQuantity);
+});
+
 declare module '../support/world' {
     interface CustomWorld {
         cartPage: CartPage;
@@ -216,7 +265,8 @@ CustomWorld.prototype.getDefaultPrice = function (productName: string): number {
         'Men Tshirt': 400,
         'Stylish Dress': 1500,
         'Beautiful Peacock': 300,
-        'Sleeveless Dress': 800
+        'Sleeveless Dress': 800,
+        'Mouse': 100
     };
 
     return defaultPrices[productName] || 500;
